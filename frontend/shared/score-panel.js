@@ -11,6 +11,8 @@
 // disclosure instead of being shown by default, per the "one primary
 // action per screen" rule.
 const EmberReadyScorePanel = (() => {
+  const API_BASE = window.EMBERREADY_API_BASE || "";
+
   // Maps the underlying Low/Moderate/High/Extreme scoring labels to the
   // plain-language public vocabulary used everywhere else in the app.
   const STATUS_MAP = {
@@ -106,6 +108,15 @@ const EmberReadyScorePanel = (() => {
             educational information, not an official prediction.
           </p>
 
+          <div class="ai-explain-block">
+            <button type="button" class="btn btn-secondary" data-role="ai-explain-btn">✨ Ask AI to explain this</button>
+            <p class="fine-print hidden" data-role="ai-explain-note">
+              AI-generated explanation of the same numbers above — no new information, and not a
+              substitute for official guidance.
+            </p>
+            <p class="rs-ai-explanation hidden" data-role="ai-explain-text"></p>
+          </div>
+
           <div class="rs-components">
             <div class="rs-component">
               <div class="rc-label">Data confidence</div>
@@ -167,8 +178,56 @@ const EmberReadyScorePanel = (() => {
 
     let lastData = null;
 
+    els["ai-explain-btn"].addEventListener("click", async () => {
+      if (!lastData) return;
+      const btn = els["ai-explain-btn"];
+      btn.disabled = true;
+      btn.textContent = "Asking AI…";
+      try {
+        const payload = {
+          location: lastData.location.matched_address,
+          status_label: statusFor(lastData.preparedness_indicator.label).word,
+          baseline_label: lastData.baseline_wildfire_exposure.label,
+          weather_label: lastData.current_fire_weather.label,
+          factors: lastData.factors.map((f) => ({
+            name: f.name,
+            available: f.available,
+            raw_value: f.raw_value,
+            raw_unit: f.raw_unit,
+            contribution_points: f.contribution_points,
+          })),
+          safety_notice: lastData.safety_notice,
+        };
+        const resp = await fetch(`${API_BASE}/api/explain`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!resp.ok) throw new Error("request failed");
+        const data = await resp.json();
+        els["ai-explain-text"].textContent = data.explanation;
+        els["ai-explain-text"].classList.remove("hidden");
+        els["ai-explain-note"].classList.remove("hidden");
+        btn.classList.add("hidden");
+      } catch (err) {
+        els["ai-explain-text"].textContent = "AI explanation isn't available right now.";
+        els["ai-explain-text"].classList.remove("hidden");
+        btn.disabled = false;
+        btn.textContent = "✨ Ask AI to explain this";
+      }
+    });
+
     function render(data, extras) {
       lastData = data;
+
+      // A fresh location/score means a fresh AI explanation, if the user
+      // wants one again — never carry a prior location's text forward.
+      els["ai-explain-btn"].disabled = false;
+      els["ai-explain-btn"].textContent = "✨ Ask AI to explain this";
+      els["ai-explain-btn"].classList.remove("hidden");
+      els["ai-explain-text"].classList.add("hidden");
+      els["ai-explain-note"].classList.add("hidden");
+
       const status = statusFor(data.preparedness_indicator.label);
       els["status-pill"].textContent = status.word;
       els["status-pill"].className = `pill ${status.pillClass}`;

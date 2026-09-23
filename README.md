@@ -60,6 +60,7 @@ about the precision limits of the data behind it.
 | Vegetation/fuel proxy | LANDFIRE FBFM40 (live WMS `GetFeatureInfo`) | 30m grid | Real per-pixel live query — no bulk download needed. The 0-1 hazard score is **EmberReady's own simplified proxy**, grouped from the standard Scott & Burgan 40 fuel model catalog — not an official LANDFIRE hazard rating or a fire-behavior model output. |
 | Baseline wildfire exposure | USDA Forest Service Wildfire Risk to Communities | **County-scale** | A **modeled** long-term burn-probability percentile (FSim simulation), not observed fire history. No live point API exists, so a small pre-extracted CSV (`backend/data/wrc_counties.csv`, 3,144 counties) ships with the app — see `backend/scripts/fetch_static_layers.py`. **If a county has no WRC data (confirmed cases: DC and 78 territory counties), this factor is excluded from the score and clearly flagged — never silently replaced with a default value.** |
 | National map county boundaries | US Census Bureau Cartographic Boundary Files (2023, county, 20m generalization) | **County-scale** | Public domain, no key. Converted once to a static GeoJSON (`backend/data/map/us_counties.geojson`) joined with the same WRC burn-probability data above — see `backend/scripts/build_county_map_data.py`. Never fetched live. |
+| Plain-language "Ask AI to explain this" text | Google Gemini API (`backend/app/api/ai_explain.py`) | N/A — text only | **Disclosed AI usage.** Optional, opt-in, and strictly bounded: the prompt hands the model only the factor values already computed and shown on screen, and instructs it never to add a fact, statistic, or safety instruction beyond what's given. It restates the existing score in plain sentences — it does not compute, alter, or independently determine any part of the score itself. The deterministic explainer sentence above it needs no AI and is always shown regardless of whether this feature is configured. |
 
 **Known MVP limitations** (documented rather than hidden):
 - Weather is a model-grid value bilinear-interpolated to your point, not a
@@ -213,6 +214,21 @@ cd ember-ready/backend
 `run.sh` creates a virtualenv, installs dependencies, and starts the app at
 `http://localhost:8000`. That's the one command.
 
+**Optional: AI explanation feature.** The "✨ Ask AI to explain this" button
+in the risk score panel calls [Google Gemini](https://aistudio.google.com/apikey)
+(free tier) to turn the already-computed score factors into a plain-language
+paragraph. It's entirely optional — everything else in the app works with
+zero API keys. To enable it, set an environment variable before starting the
+backend:
+
+```bash
+export GEMINI_API_KEY=your-key-here
+```
+
+Without it, the button quietly reports the explanation as unavailable; the
+deterministic explainer sentence above it (built from the same real factors,
+no AI involved) is always shown regardless.
+
 To regenerate the committed county-level baseline data or map data
 (optional — both are already checked in):
 
@@ -268,8 +284,9 @@ cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
 automatically (build: `pip install -r backend/requirements.txt`).
 
 **Railway:** connect the repo; Railway auto-detects the `Procfile`. No
-environment variables are required — no API keys are used anywhere in the
-live request path.
+environment variables are required for the core app — the only optional one
+is `GEMINI_API_KEY` (see Setup above), which just enables the AI explanation
+button; every other feature uses no API keys anywhere in the live request path.
 
 ## Demo script
 

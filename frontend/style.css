@@ -727,6 +727,24 @@ details.rs-details summary {
   margin-top: 14px;
 }
 
+.ai-explain-block {
+  margin: 14px 0;
+}
+
+.ai-explain-block .btn {
+  padding: 10px 18px;
+  font-size: 0.95rem;
+}
+
+.rs-ai-explanation {
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-top: 10px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 /* --------------------------------------------------------------------
    Safety Journey — vertical story pathway
    -------------------------------------------------------------------- */

@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api import (
+    ai_explain as ai_explain_api,
     air_quality as air_quality_api,
     alerts as alerts_api,
     checklist,
@@ -45,6 +46,7 @@ app.include_router(geocode_api.router, prefix="/api", tags=["geocode"])
 app.include_router(air_quality_api.router, prefix="/api", tags=["air-quality"])
 app.include_router(alerts_api.router, prefix="/api", tags=["alerts"])
 app.include_router(seismic_api.router, prefix="/api", tags=["seismic"])
+app.include_router(ai_explain_api.router, prefix="/api", tags=["ai"])
 
 
 @app.get("/health")
