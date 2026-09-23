@@ -69,17 +69,49 @@ function mapInstanceFor(key) {
   return key === "main" ? map : insetMaps[key];
 }
 
-function placeMarker(lat, lon, popupText) {
-  const key = targetMapKeyFor(lat, lon);
-  const targetMap = mapInstanceFor(key);
+// Set while placeMarker() is swapping out the old marker for a new one, so
+// the popupclose Leaflet fires during that cleanup doesn't also trigger
+// removeAllMarkers() and fight with the marker just being added below.
+let suppressPopupCloseRemoval = false;
 
+function removeAllMarkers() {
   for (const [k, m] of Object.entries(markers)) {
     mapInstanceFor(k).removeLayer(m);
   }
   markers = {};
+}
+
+// The user is explicitly done with this place — remove its pin, close the
+// info sheet, clear the search box, and forget it in state so it doesn't
+// quietly reappear the next time they land on this tab (see
+// restoreLastLocation()). Called from both the sheet's own "x" and the
+// marker popup's "x", so either one gives a fully clean state.
+function dismissPlace() {
+  removeAllMarkers();
+  document.getElementById("map-info-sheet").classList.remove("open");
+  document.getElementById("map-query").value = "";
+  EmberReadyState.update({ lastScore: null });
+}
+
+function placeMarker(lat, lon, popupText) {
+  const key = targetMapKeyFor(lat, lon);
+  const targetMap = mapInstanceFor(key);
+
+  suppressPopupCloseRemoval = true;
+  for (const [k, m] of Object.entries(markers)) {
+    mapInstanceFor(k).removeLayer(m);
+  }
+  markers = {};
+  suppressPopupCloseRemoval = false;
 
   const marker = L.marker([lat, lon]).addTo(targetMap);
   if (popupText) marker.bindPopup(popupText).openPopup();
+  // Closing the marker's own popup (its "x") means the user is done with
+  // this landmark — remove the pin from the map, not just its label.
+  marker.on("popupclose", () => {
+    if (suppressPopupCloseRemoval) return;
+    dismissPlace();
+  });
   markers[key] = marker;
 
   if (key === "main") {
@@ -128,7 +160,11 @@ function closeSheet() {
   document.getElementById("map-info-sheet").classList.remove("open");
 }
 
-document.getElementById("close-sheet-btn").addEventListener("click", closeSheet);
+// The user explicitly dismissing the sheet (its own "x") means they're done
+// with this place — see dismissPlace(). This is distinct from closeSheet()
+// used internally on a failed search, which must NOT wipe out a still-valid
+// marker from an earlier successful lookup.
+document.getElementById("close-sheet-btn").addEventListener("click", dismissPlace);
 
 function showCountyInfo(properties) {
   document.getElementById("county-info-panel").classList.remove("hidden");
