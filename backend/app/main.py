@@ -7,6 +7,14 @@ from pathlib import Path
 # importable as a top-level package unless `backend/` is on sys.path.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from dotenv import load_dotenv
+
+# Loads backend/.env into the process environment (e.g. GEMINI_API_KEY) for
+# local dev, before any app module reads os.environ at import time. A
+# no-op if the file doesn't exist — Vercel/Render/Railway set real
+# environment variables directly, never through this file.
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles

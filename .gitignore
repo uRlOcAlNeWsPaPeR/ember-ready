@@ -6,6 +6,7 @@ __pycache__/
 *.egg-info/
 .vercel
 .env*
+!backend/.env.example
 backend/pyproject.toml
 backend/uv.lock
 backend/data/cache.sqlite3

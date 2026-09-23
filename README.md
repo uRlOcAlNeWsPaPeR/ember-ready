@@ -220,12 +220,17 @@ risk score panel, and "✨ Ask AI to summarize my plan" on the Plan screen —
 call [Google Gemini](https://aistudio.google.com/apikey) (free tier) to turn
 data the app already computed or tracked (score factors, checklist progress)
 into a plain-language paragraph. Both are entirely optional — everything
-else in the app works with zero API keys. To enable them, set an
-environment variable before starting the backend:
+else in the app works with zero API keys. To enable them:
 
 ```bash
-export GEMINI_API_KEY=your-key-here
+cd backend
+cp .env.example .env
 ```
+
+Then open `backend/.env` and paste your key after `GEMINI_API_KEY=`.
+`backend/.env` is gitignored — it's never committed — and is loaded
+automatically on startup (see `app/main.py`), so no `export` or shell setup
+is needed; just restart `run.sh`.
 
 Without it, both buttons quietly report the AI text as unavailable; every
 deterministic element they sit next to (the explainer sentence, the
