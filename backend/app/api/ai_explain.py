@@ -23,6 +23,18 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 
+# EmberReady runs these AI features on Gemini's free tier, which has a real
+# daily/per-minute quota — shown to the user instead of a generic error so
+# a rate limit doesn't read as "broken." A single message here, reused by
+# both frontend AI buttons via the response body, so the wording only lives
+# in one place.
+QUOTA_MESSAGE = (
+    "AI features are on a free usage plan and that plan's limit has been "
+    "reached for the moment — EmberReady is a small independent project, "
+    "not a funded service. This will resolve once the limit resets; "
+    "everything else in the app is unaffected."
+)
+
 
 def _call_gemini(prompt: str, max_output_tokens: int = 220) -> str:
     if not GEMINI_API_KEY:
@@ -45,11 +57,18 @@ def _call_gemini(prompt: str, max_output_tokens: int = 220) -> str:
             },
             timeout=20.0,
         )
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail="Could not reach the AI service right now.") from exc
+
+    if resp.status_code == 429:
+        raise HTTPException(status_code=429, detail=QUOTA_MESSAGE)
+
+    try:
         resp.raise_for_status()
         data = resp.json()
         return data["candidates"][0]["content"]["parts"][0]["text"].strip()
     except (httpx.HTTPError, KeyError, IndexError) as exc:
-        raise HTTPException(status_code=502, detail="Could not reach the AI service right now.") from exc
+        raise HTTPException(status_code=502, detail="Could not generate an AI response right now.") from exc
 
 
 # --- Risk score explanation ------------------------------------------------

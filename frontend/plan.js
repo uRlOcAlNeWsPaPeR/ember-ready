@@ -300,14 +300,19 @@ function wireAiPlanButton(btnId, noteId, textId, hazard, collectItems) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hazard, items: collectItems() }),
       });
-      if (!resp.ok) throw new Error("request failed");
-      const data = await resp.json();
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        // A 429 carries a specific, user-facing quota message from the
+        // backend (see backend/app/api/ai_explain.py's QUOTA_MESSAGE) —
+        // any other failure falls back to the generic message below.
+        throw new Error(resp.status === 429 && data.detail ? data.detail : "AI summary isn't available right now.");
+      }
       textEl.textContent = data.summary;
       textEl.classList.remove("hidden");
       note.classList.remove("hidden");
       btn.classList.add("hidden");
     } catch (err) {
-      textEl.textContent = "AI summary isn't available right now.";
+      textEl.textContent = err.message || "AI summary isn't available right now.";
       textEl.classList.remove("hidden");
       btn.disabled = false;
       btn.textContent = "✨ Ask AI to summarize my plan";

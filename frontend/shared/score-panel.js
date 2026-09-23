@@ -203,14 +203,19 @@ const EmberReadyScorePanel = (() => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        if (!resp.ok) throw new Error("request failed");
-        const data = await resp.json();
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) {
+          // A 429 carries a specific, user-facing quota message from the
+          // backend (see backend/app/api/ai_explain.py's QUOTA_MESSAGE) —
+          // any other failure falls back to the generic message below.
+          throw new Error(resp.status === 429 && data.detail ? data.detail : "AI explanation isn't available right now.");
+        }
         els["ai-explain-text"].textContent = data.explanation;
         els["ai-explain-text"].classList.remove("hidden");
         els["ai-explain-note"].classList.remove("hidden");
         btn.classList.add("hidden");
       } catch (err) {
-        els["ai-explain-text"].textContent = "AI explanation isn't available right now.";
+        els["ai-explain-text"].textContent = err.message || "AI explanation isn't available right now.";
         els["ai-explain-text"].classList.remove("hidden");
         btn.disabled = false;
         btn.textContent = "✨ Ask AI to explain this";

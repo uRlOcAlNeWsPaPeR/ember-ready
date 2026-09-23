@@ -56,6 +56,18 @@ def test_explain_upstream_failure_returns_502(monkeypatch):
     assert resp.status_code == 502
 
 
+@respx.mock
+def test_explain_quota_exceeded_returns_429_with_user_facing_message(monkeypatch):
+    import app.api.ai_explain as ai_explain_module
+
+    monkeypatch.setattr(ai_explain_module, "GEMINI_API_KEY", "test-key")
+    respx.post(ai_explain_module.GEMINI_URL).mock(return_value=httpx.Response(429))
+    resp = client.post("/api/explain", json=PAYLOAD)
+    assert resp.status_code == 429
+    assert resp.json()["detail"] == ai_explain_module.QUOTA_MESSAGE
+    assert "free" in resp.json()["detail"].lower()
+
+
 PLAN_PAYLOAD = {
     "hazard": "earthquake",
     "items": [
@@ -96,3 +108,14 @@ def test_plan_summary_upstream_failure_returns_502(monkeypatch):
     respx.post(ai_explain_module.GEMINI_URL).mock(return_value=httpx.Response(500))
     resp = client.post("/api/plan-summary", json=PLAN_PAYLOAD)
     assert resp.status_code == 502
+
+
+@respx.mock
+def test_plan_summary_quota_exceeded_returns_429_with_user_facing_message(monkeypatch):
+    import app.api.ai_explain as ai_explain_module
+
+    monkeypatch.setattr(ai_explain_module, "GEMINI_API_KEY", "test-key")
+    respx.post(ai_explain_module.GEMINI_URL).mock(return_value=httpx.Response(429))
+    resp = client.post("/api/plan-summary", json=PLAN_PAYLOAD)
+    assert resp.status_code == 429
+    assert resp.json()["detail"] == ai_explain_module.QUOTA_MESSAGE
