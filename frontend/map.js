@@ -140,7 +140,7 @@ function styleForFeature(feature) {
   };
 }
 
-function buildLegendStrip(legend) {
+function buildLegendStrip(legend, vintage) {
   const el = document.getElementById("map-legend-strip");
   el.innerHTML =
     "<strong>Baseline hazard</strong>" +
@@ -149,7 +149,8 @@ function buildLegendStrip(legend) {
         (entry) =>
           `<div class="legend-row"><span class="legend-swatch" style="background:${entry.color}"></span>${entry.label}</div>`
       )
-      .join("");
+      .join("") +
+    `<div class="legend-vintage">USDA WRC, ${vintage}</div>`;
 }
 
 function openSheet() {
@@ -424,7 +425,7 @@ async function initMap() {
     const metaResp = await fetch(`${API_BASE}/api/map/meta`);
     const meta = await metaResp.json();
     legendByLabel = Object.fromEntries(meta.legend.map((entry) => [entry.label, entry]));
-    buildLegendStrip(meta.legend);
+    buildLegendStrip(meta.legend, meta.hazard_vintage);
   } catch (err) {
     legendByLabel = {};
   }

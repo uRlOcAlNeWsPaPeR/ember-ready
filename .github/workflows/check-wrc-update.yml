@@ -1,0 +1,76 @@
+name: Check for a new USDA WRC data release
+
+# Read-only check: has USDA published a newer Wildfire Risk to Communities
+# release than the one this app currently ships? If so, opens a GitHub
+# issue so a human can review and decide whether to pull it in — this
+# workflow never modifies data, commits, or deploys anything itself (see
+# backend/scripts/check_wrc_update.py).
+#
+# USDA's own release cadence is every 2-4 years (2020, 2024, "planned for
+# 2026" per their FAQ), so a monthly check is more than sufficient.
+
+on:
+  schedule:
+    # 13:24 UTC on the 3rd of each month — an off-the-hour time so this
+    # doesn't land on GitHub's scheduling pile-up at the top of the hour.
+    - cron: "24 13 3 * *"
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install check-script dependencies
+        run: pip install httpx
+
+      - name: Run the read-only update check
+        id: check
+        working-directory: backend
+        run: |
+          set +e
+          output=$(python -m scripts.check_wrc_update)
+          status=$?
+          echo "$output"
+          echo "output<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$output" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "found_update=$([ $status -eq 1 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Open an issue if a new release is available
+        if: steps.check.outputs.found_update == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing=$(gh issue list --label wrc-data-update --state open --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            echo "Open issue #$existing already tracks this — not creating a duplicate."
+            exit 0
+          fi
+          gh issue create \
+            --title "New USDA Wildfire Risk to Communities release available" \
+            --label wrc-data-update \
+            --body "$(cat <<EOF
+          The scheduled check found a newer USDA WRC data release than the one EmberReady currently ships.
+
+          \`\`\`
+          ${{ steps.check.outputs.output }}
+          \`\`\`
+
+          To pull it in:
+          \`\`\`
+          cd backend
+          python -m scripts.fetch_static_layers
+          python -m scripts.build_county_map_data
+          \`\`\`
+          Then review the diff, commit, and redeploy.
+          EOF
+          )"

@@ -967,6 +967,14 @@ body.map-screen {
   border-radius: 3px;
 }
 
+.map-legend-strip .legend-vintage {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+}
+
 .leaflet-tile-pane {
   filter: saturate(0.85) brightness(1.02);
 }

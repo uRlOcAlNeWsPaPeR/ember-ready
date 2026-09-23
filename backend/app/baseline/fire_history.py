@@ -14,19 +14,37 @@ from __future__ import annotations
 
 import csv
 import functools
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
 from app.schemas import Resolution
 
 DEFAULT_CSV_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "wrc_counties.csv"
+SOURCE_META_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "wrc_source_meta.json"
 
 FIRE_HISTORY_SOURCE = (
     "USDA Forest Service Wildfire Risk to Communities — county-level burn probability "
     "national percentile (FSim-modeled, not observed fire history)"
 )
 FIRE_HISTORY_RESOLUTION = Resolution.COUNTY
-FIRE_HISTORY_VINTAGE = "WRC county download, 2026-04-15 vintage"
+
+
+def _current_vintage() -> str:
+    """Reads the vintage recorded the last time scripts/fetch_static_layers.py
+    ran (see scripts/wrc_source.py), so this label updates automatically
+    whenever the data does — no code change needed for a routine refresh."""
+    try:
+        with SOURCE_META_PATH.open(encoding="utf-8") as f:
+            vintage = json.load(f).get("vintage")
+            if vintage:
+                return f"WRC county download, {vintage} vintage"
+    except (OSError, json.JSONDecodeError):
+        pass
+    return "WRC county download, vintage unknown"
+
+
+FIRE_HISTORY_VINTAGE = _current_vintage()
 
 
 @dataclass

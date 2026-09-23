@@ -26,6 +26,7 @@ import shapefile
 
 from app.scoring.config import load_weights_config
 from app.scoring.weighted_model import _label_for
+from scripts.wrc_source import load_known_source
 
 CENSUS_SHAPEFILE_URL = "https://www2.census.gov/geo/tiger/GENZ2023/shp/cb_2023_us_county_20m.zip"
 SHAPEFILE_BASENAME = "cb_2023_us_county_20m"
@@ -38,10 +39,12 @@ OUTPUT_PATH = Path(__file__).resolve().parent.parent / "data" / "map" / "us_coun
 # or state zoom levels.
 COORD_PRECISION = 5
 
+_known_source = load_known_source()
+
 SOURCE_CITATION = {
     "boundaries_source": "US Census Bureau Cartographic Boundary Files, 2023, counties, 20m generalization",
     "hazard_source": "USDA Forest Service Wildfire Risk to Communities (county-level, FSim-modeled burn probability national percentile)",
-    "hazard_vintage": "2026-04-15",
+    "hazard_vintage": _known_source["vintage"] if _known_source else "unknown",
 }
 
 

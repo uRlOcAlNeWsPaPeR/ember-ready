@@ -1,13 +1,18 @@
-"""One-time data prep: download USDA Forest Service Wildfire Risk to
-Communities' county-level summary workbook and extract a small CSV of just
-the fields EmberReady needs (county FIPS + national burn-probability /
-risk-to-structures percentiles).
+"""Data prep: download USDA Forest Service Wildfire Risk to Communities'
+county-level summary workbook and extract a small CSV of just the fields
+EmberReady needs (county FIPS + national burn-probability / risk-to-
+structures percentiles).
 
 This is the only "static baseline" source that needs a bulk download —
 LANDFIRE fuel data is queried live per-request via WMS (see
 app/baseline/fuel_vegetation.py). The WRC workbook itself does not expose a
 live per-point API (see the source-verification memo), but is small enough
 (~5MB) to download once and ship as a ~200KB derived CSV.
+
+The download URL is discovered fresh from wildfirerisk.org's download page
+each run (see wrc_source.py) rather than hardcoded, since USDA date-stamps
+the filename on every real release — re-running this script is exactly how
+a detected update (see check_wrc_update.py) gets pulled in.
 
 Run with: python -m scripts.fetch_static_layers
 """
@@ -20,18 +25,21 @@ from pathlib import Path
 import httpx
 import openpyxl
 
-WRC_WORKBOOK_URL = "https://wildfirerisk.org/wp-content/uploads/2026/04/wrc_download_20260415.xlsx"
-OUTPUT_PATH = Path(__file__).resolve().parent.parent / "data" / "wrc_counties.csv"
+from scripts.wrc_source import discover_current_download_url, save_known_source, vintage_from_url
 
-SOURCE_CITATION = (
-    "USDA Forest Service. 2026. Wildfire Risk to Communities. "
-    "https://wildfirerisk.org [Accessed via bulk county-level download, 2026-04-15 vintage]"
-)
+OUTPUT_PATH = Path(__file__).resolve().parent.parent / "data" / "wrc_counties.csv"
 
 
 def main() -> None:
-    print(f"Downloading {WRC_WORKBOOK_URL} ...")
-    resp = httpx.get(WRC_WORKBOOK_URL, timeout=60.0, follow_redirects=True)
+    wrc_workbook_url = discover_current_download_url()
+    vintage = vintage_from_url(wrc_workbook_url)
+    source_citation = (
+        f"USDA Forest Service. Wildfire Risk to Communities. "
+        f"https://wildfirerisk.org [Accessed via bulk county-level download, {vintage} vintage]"
+    )
+
+    print(f"Downloading {wrc_workbook_url} ...")
+    resp = httpx.get(wrc_workbook_url, timeout=60.0, follow_redirects=True)
     resp.raise_for_status()
 
     wb = openpyxl.load_workbook(io.BytesIO(resp.content), read_only=True, data_only=True)
@@ -71,8 +79,10 @@ def main() -> None:
             )
             count += 1
 
+    save_known_source(wrc_workbook_url)
+
     print(f"Wrote {count} counties to {OUTPUT_PATH}")
-    print(f"Citation: {SOURCE_CITATION}")
+    print(f"Citation: {source_citation}")
 
 
 if __name__ == "__main__":
