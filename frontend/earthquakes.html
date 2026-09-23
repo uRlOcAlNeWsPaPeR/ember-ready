@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EmberReady — Earthquakes</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="stylesheet" href="style.css?v=26" />
+</head>
+<body class="map-screen">
+  <div class="map-screen-frame">
+    <div id="eq-map" class="leaflet-map" role="img" aria-label="Map of the United States showing long-term seismic hazard and recent earthquakes"></div>
+    <div class="map-inset map-inset-ak" style="position:absolute; left:12px; top:70px; width:120px; height:90px; border-radius:12px; overflow:hidden; box-shadow: var(--shadow-soft); z-index:600;">
+      <div id="eq-inset-ak" style="width:100%; height:100%;" role="img" aria-label="Alaska seismic hazard inset"></div>
+    </div>
+    <div class="map-inset map-inset-hi" style="position:absolute; left:12px; top:168px; width:90px; height:70px; border-radius:12px; overflow:hidden; box-shadow: var(--shadow-soft); z-index:600;">
+      <div id="eq-inset-hi" style="width:100%; height:100%;" role="img" aria-label="Hawaii seismic hazard inset"></div>
+    </div>
+  </div>
+
+  <div class="map-top-bar" style="flex-direction:column; align-items:stretch; gap:8px;">
+    <div class="filter-row" role="group" aria-label="Time range for recent earthquakes">
+      <button type="button" class="filter-btn active" data-period="day">Past Day</button>
+      <button type="button" class="filter-btn" data-period="week">Past 7 Days</button>
+      <button type="button" class="filter-btn" data-period="month">Past 30 Days</button>
+    </div>
+    <div class="eq-status-line" id="eq-last-updated">Loading recent earthquakes…</div>
+  </div>
+
+  <button type="button" class="reset-view-btn" id="eq-reset-view-btn" title="Reset map view" aria-label="Reset map view">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11.5 12 4l9 7.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+
+  <button type="button" class="locate-me-btn" id="eq-info-btn" title="Sources &amp; safety information" aria-label="Sources and safety information">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+
+  <div class="map-legend-strip" id="eq-legend-strip"></div>
+
+  <!-- Modal content lives here when not open — see shared/modal.js -->
+  <div class="hidden">
+    <div data-modal-home="quake-detail">
+      <div id="quake-detail-content"></div>
+    </div>
+    <div data-modal-home="sources-safety">
+      <p class="safety-line">Earthquake risk maps show long-term hazard, not a prediction of when an earthquake will happen.</p>
+      <p class="safety-line">During an emergency, follow instructions from local emergency officials.</p>
+
+      <h4 style="margin-top:18px;">Sources</h4>
+      <ul style="padding-left:20px; line-height:1.9;">
+        <li>Seismic hazard overlay: <strong>U.S. Geological Survey</strong>, sampled from the <a href="https://www.usgs.gov/programs/earthquake-hazards/science/2023-50-state-long-term-national-seismic-hazard-model" target="_blank" rel="noopener">2023 National Seismic Hazard Model</a>.</li>
+        <li>Live earthquake markers: <strong>U.S. Geological Survey</strong> <a href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php" target="_blank" rel="noopener">real-time earthquake feed</a>.</li>
+      </ul>
+
+      <h4 style="margin-top:18px;">Methodology</h4>
+      <p class="fine-print" id="sources-methodology"></p>
+    </div>
+  </div>
+
+  <div id="bottom-nav-root"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="shared/app-state.js?v=26"></script>
+  <script src="shared/effects.js?v=26"></script>
+  <script src="shared/nav.js?v=26"></script>
+  <script src="shared/modal.js?v=26"></script>
+  <script src="earthquakes.js?v=26"></script>
+</body>
+</html>

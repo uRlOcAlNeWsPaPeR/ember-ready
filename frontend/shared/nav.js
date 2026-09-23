@@ -1,5 +1,5 @@
-// Shared bottom navigation bar — Map first, then Plan. Injected into a
-// `<div id="bottom-nav-root">` placeholder on every screen so the markup
+// Shared bottom navigation bar — Map, Earthquakes, then Plan. Injected into
+// a `<div id="bottom-nav-root">` placeholder on every screen so the markup
 // and icons are only maintained once.
 (function () {
   const ITEMS = [
@@ -8,6 +8,12 @@
       match: ["", "index.html"],
       label: "Map",
       icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16M16 6v16"/></svg>`,
+    },
+    {
+      href: "earthquakes.html",
+      match: ["earthquakes.html"],
+      label: "Earthquakes",
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h3l2-7 3 14 2-9 2 5 2-3h6" /></svg>`,
     },
     {
       href: "plan.html",

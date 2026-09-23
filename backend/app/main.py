@@ -18,6 +18,7 @@ from app.api import (
     geocode as geocode_api,
     map as map_api,
     score,
+    seismic as seismic_api,
 )
 
 app = FastAPI(
@@ -43,6 +44,7 @@ app.include_router(map_api.router, prefix="/api", tags=["map"])
 app.include_router(geocode_api.router, prefix="/api", tags=["geocode"])
 app.include_router(air_quality_api.router, prefix="/api", tags=["air-quality"])
 app.include_router(alerts_api.router, prefix="/api", tags=["alerts"])
+app.include_router(seismic_api.router, prefix="/api", tags=["seismic"])
 
 
 @app.get("/health")

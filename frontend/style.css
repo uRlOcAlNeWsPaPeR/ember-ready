@@ -890,6 +890,46 @@ body.map-screen {
   box-shadow: var(--shadow-soft);
 }
 
+.filter-row {
+  display: flex;
+  gap: 6px;
+  background: var(--surface);
+  padding: 4px;
+  border-radius: 999px;
+  box-shadow: var(--shadow-soft);
+  align-self: flex-start;
+}
+
+.filter-btn {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-muted);
+  box-shadow: none;
+}
+
+.filter-btn:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.filter-btn.active {
+  background: var(--blue);
+  color: #fff;
+}
+
+.eq-status-line {
+  align-self: flex-start;
+  background: var(--surface);
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-soft);
+}
+
 .locate-me-btn {
   position: fixed;
   right: 16px;

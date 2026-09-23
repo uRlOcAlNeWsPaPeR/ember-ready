@@ -32,3 +32,23 @@ def test_get_counties_missing_file_returns_503(monkeypatch, tmp_path):
     monkeypatch.setattr(map_module, "MAP_DATA_PATH", tmp_path / "does-not-exist.geojson")
     resp = client.get("/api/map/counties")
     assert resp.status_code == 503
+
+
+def test_get_states_returns_geojson_with_cache_header():
+    resp = client.get("/api/map/states")
+    assert resp.status_code == 200
+    assert "max-age" in resp.headers.get("cache-control", "")
+    body = resp.json()
+    assert body["type"] == "FeatureCollection"
+    assert 45 < len(body["features"]) < 60
+    names = {f["properties"]["name"] for f in body["features"]}
+    assert "California" in names
+    assert "Alaska" in names
+
+
+def test_get_states_missing_file_returns_503(monkeypatch, tmp_path):
+    import app.api.map as map_module
+
+    monkeypatch.setattr(map_module, "STATES_DATA_PATH", tmp_path / "does-not-exist.geojson")
+    resp = client.get("/api/map/states")
+    assert resp.status_code == 503

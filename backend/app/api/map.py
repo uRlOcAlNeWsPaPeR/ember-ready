@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 router = APIRouter()
 
 MAP_DATA_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "map" / "us_counties.geojson"
+STATES_DATA_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "map" / "us_states.geojson"
 
 DISCLAIMER = "Baseline hazard only; check local conditions for a personalized preparedness indicator."
 
@@ -37,6 +38,24 @@ def get_counties():
             detail="County map data is not available on this server. Run scripts/build_county_map_data.py.",
         )
     with MAP_DATA_PATH.open(encoding="utf-8") as f:
+        data = json.load(f)
+    return JSONResponse(
+        content=data,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@router.get("/map/states")
+def get_states():
+    """Lightweight state-boundary outlines (~52 features) — used by the
+    Earthquake Risk map so state lines are visible over the terrain
+    basemap, which doesn't render them prominently on its own."""
+    if not STATES_DATA_PATH.exists():
+        raise HTTPException(
+            status_code=503,
+            detail="State boundary data is not available on this server. Run scripts/build_state_boundaries.py.",
+        )
+    with STATES_DATA_PATH.open(encoding="utf-8") as f:
         data = json.load(f)
     return JSONResponse(
         content=data,
