@@ -84,6 +84,11 @@ function refreshAllChapterStates() {
   const earthquakeVisible = !document.getElementById("earthquake-plan-section").classList.contains("hidden");
   refreshChapterGroup(WILDFIRE_CHAPTERS, "journey-path-fill", wildfireVisible);
   refreshChapterGroup(EARTHQUAKE_CHAPTERS, "eq-journey-path-fill", earthquakeVisible);
+
+  // Any checklist change invalidates a previously-generated AI summary —
+  // it's grounded in a snapshot of done/not-done state that's now stale.
+  resetAiPlanButton("wildfire-ai-plan-btn", "wildfire-ai-plan-note", "wildfire-ai-plan-text");
+  resetAiPlanButton("earthquake-ai-plan-btn", "earthquake-ai-plan-note", "earthquake-ai-plan-text");
 }
 
 document.querySelectorAll("[data-open-chapter]").forEach((btn) => {
@@ -228,6 +233,96 @@ function renderStaticList(elementId, stage, items) {
     ul.appendChild(li);
   });
 }
+
+// --- AI plan summary (optional — see backend/app/api/ai_explain.py) ------
+// Grounded strictly in the user's own real checklist/review state, never
+// an open-ended chat: the backend prompt is only ever handed the items
+// below and told never to invent a new preparedness step.
+
+function collectWildfireItems() {
+  const items = [];
+  const checklist = EmberReadyState.load().lastChecklist;
+  if (checklist) {
+    const categories = [
+      ["evacuation_route", checklist.evacuation_route || []],
+      ["go_bag", checklist.go_bag || []],
+      ["defensible_space", checklist.defensible_space || []],
+    ];
+    for (const [cat, catItems] of categories) {
+      for (const item of catItems) {
+        items.push({ category: cat, text: item.text, done: EmberReadyState.isDone(cat, item.text) });
+      }
+    }
+  }
+  for (const text of EmberReadyState.DURING_ITEMS) {
+    items.push({ category: "during", text, done: EmberReadyState.isReviewed("during", text) });
+  }
+  for (const text of EmberReadyState.AFTER_ITEMS) {
+    items.push({ category: "after", text, done: EmberReadyState.isReviewed("after", text) });
+  }
+  return items;
+}
+
+function collectEarthquakeItems() {
+  const items = [];
+  const stages = [
+    ["earthquakeBefore", EmberReadyState.EARTHQUAKE_BEFORE_ITEMS],
+    ["earthquakeDuring", EmberReadyState.EARTHQUAKE_DURING_ITEMS],
+    ["earthquakeAfter", EmberReadyState.EARTHQUAKE_AFTER_ITEMS],
+  ];
+  for (const [stage, list] of stages) {
+    for (const text of list) {
+      items.push({ category: stage, text, done: EmberReadyState.isReviewed(stage, text) });
+    }
+  }
+  return items;
+}
+
+function resetAiPlanButton(btnId, noteId, textId) {
+  const btn = document.getElementById(btnId);
+  btn.disabled = false;
+  btn.textContent = "✨ Ask AI to summarize my plan";
+  btn.classList.remove("hidden");
+  document.getElementById(textId).classList.add("hidden");
+  document.getElementById(noteId).classList.add("hidden");
+}
+
+function wireAiPlanButton(btnId, noteId, textId, hazard, collectItems) {
+  const btn = document.getElementById(btnId);
+  const note = document.getElementById(noteId);
+  const textEl = document.getElementById(textId);
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    btn.textContent = "Asking AI…";
+    try {
+      const resp = await fetch(`${API_BASE}/api/plan-summary`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hazard, items: collectItems() }),
+      });
+      if (!resp.ok) throw new Error("request failed");
+      const data = await resp.json();
+      textEl.textContent = data.summary;
+      textEl.classList.remove("hidden");
+      note.classList.remove("hidden");
+      btn.classList.add("hidden");
+    } catch (err) {
+      textEl.textContent = "AI summary isn't available right now.";
+      textEl.classList.remove("hidden");
+      btn.disabled = false;
+      btn.textContent = "✨ Ask AI to summarize my plan";
+    }
+  });
+}
+
+wireAiPlanButton("wildfire-ai-plan-btn", "wildfire-ai-plan-note", "wildfire-ai-plan-text", "wildfire", collectWildfireItems);
+wireAiPlanButton(
+  "earthquake-ai-plan-btn",
+  "earthquake-ai-plan-note",
+  "earthquake-ai-plan-text",
+  "earthquake",
+  collectEarthquakeItems
+);
 
 // --- Restore on load ------------------------------------------------
 

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EmberReady — Your Plan</title>
-  <link rel="stylesheet" href="style.css?v=29" />
+  <link rel="stylesheet" href="style.css?v=30" />
 </head>
 <body>
   <main class="screen">
@@ -20,6 +20,14 @@
 
     <!-- Wildfire plan -->
     <div id="wildfire-plan-section">
+      <div class="ai-explain-block">
+        <button type="button" class="btn btn-secondary btn-block" id="wildfire-ai-plan-btn">✨ Ask AI to summarize my plan</button>
+        <p class="fine-print hidden" id="wildfire-ai-plan-note">
+          AI-generated summary of your own checklist progress above — no new steps, and not a
+          substitute for the checklist itself.
+        </p>
+        <p class="rs-ai-explanation hidden" id="wildfire-ai-plan-text"></p>
+      </div>
       <div class="journey-path">
         <div class="journey-path-fill" id="journey-path-fill"></div>
 
@@ -96,6 +104,14 @@
 
     <!-- Earthquake plan -->
     <div id="earthquake-plan-section" class="hidden">
+      <div class="ai-explain-block">
+        <button type="button" class="btn btn-secondary btn-block" id="earthquake-ai-plan-btn">✨ Ask AI to summarize my plan</button>
+        <p class="fine-print hidden" id="earthquake-ai-plan-note">
+          AI-generated summary of your own checklist progress above — no new steps, and not a
+          substitute for the checklist itself.
+        </p>
+        <p class="rs-ai-explanation hidden" id="earthquake-ai-plan-text"></p>
+      </div>
       <div class="journey-path">
         <div class="journey-path-fill" id="eq-journey-path-fill"></div>
 
@@ -239,10 +255,10 @@
 
   <div id="bottom-nav-root"></div>
 
-  <script src="shared/app-state.js?v=29"></script>
-  <script src="shared/effects.js?v=29"></script>
-  <script src="shared/nav.js?v=29"></script>
-  <script src="shared/modal.js?v=29"></script>
-  <script src="plan.js?v=29"></script>
+  <script src="shared/app-state.js?v=30"></script>
+  <script src="shared/effects.js?v=30"></script>
+  <script src="shared/nav.js?v=30"></script>
+  <script src="shared/modal.js?v=30"></script>
+  <script src="plan.js?v=30"></script>
 </body>
 </html>

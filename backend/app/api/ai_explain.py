@@ -7,19 +7,45 @@ import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-# Optional AI feature: turns the *same* numbers already shown in the score
-# panel into a plain-language paragraph. Deliberately not a general chatbot —
-# the prompt only ever hands the model facts already computed by our own
-# scoring pipeline and tells it not to add anything new, so this can't
-# introduce a fabricated risk claim the way an open-ended assistant could.
-# Degrades quietly (503/502) when no key is configured or the call fails —
-# the deterministic explainer sentence in score-panel.js is always shown
-# regardless, so this is a pure enhancement, never a dependency.
+# Optional AI features: turn numbers/state we've already computed into a
+# plain-language paragraph. Deliberately not a general chatbot — every
+# prompt here only ever hands the model facts already known to our own
+# pipeline or already tracked in the user's own local checklist state, and
+# tells it not to add anything new, so this can't introduce a fabricated
+# risk claim or a fabricated preparedness step the way an open-ended
+# assistant could. Degrades quietly (503/502) when no key is configured or
+# the call fails — every deterministic UI element these buttons sit next to
+# is always shown regardless, so these are pure enhancements, never a
+# dependency.
 router = APIRouter()
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+
+
+def _call_gemini(prompt: str, max_output_tokens: int = 220) -> str:
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=503, detail="AI generation is not configured on this server.")
+
+    try:
+        resp = httpx.post(
+            GEMINI_URL,
+            headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
+            json={
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.3, "maxOutputTokens": max_output_tokens},
+            },
+            timeout=15.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+    except (httpx.HTTPError, KeyError, IndexError) as exc:
+        raise HTTPException(status_code=502, detail="Could not reach the AI service right now.") from exc
+
+
+# --- Risk score explanation ------------------------------------------------
 
 
 class ExplainFactor(BaseModel):
@@ -44,7 +70,7 @@ class ExplainResponse(BaseModel):
     model: str
 
 
-def _build_prompt(payload: ExplainRequest) -> str:
+def _build_explain_prompt(payload: ExplainRequest) -> str:
     factor_lines = []
     for f in payload.factors:
         clean_name = f.name.replace("_", " ")
@@ -74,23 +100,50 @@ def _build_prompt(payload: ExplainRequest) -> str:
 
 @router.post("/explain", response_model=ExplainResponse)
 def explain_score(payload: ExplainRequest) -> ExplainResponse:
-    if not GEMINI_API_KEY:
-        raise HTTPException(status_code=503, detail="AI explanation is not configured on this server.")
-
-    try:
-        resp = httpx.post(
-            GEMINI_URL,
-            headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
-            json={
-                "contents": [{"parts": [{"text": _build_prompt(payload)}]}],
-                "generationConfig": {"temperature": 0.3, "maxOutputTokens": 220},
-            },
-            timeout=15.0,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-    except (httpx.HTTPError, KeyError, IndexError) as exc:
-        raise HTTPException(status_code=502, detail="Could not generate an AI explanation right now.") from exc
-
+    text = _call_gemini(_build_explain_prompt(payload))
     return ExplainResponse(explanation=text, model=GEMINI_MODEL)
+
+
+# --- Preparedness plan summary ---------------------------------------------
+
+
+class PlanItem(BaseModel):
+    category: str
+    text: str
+    done: bool
+
+
+class PlanSummaryRequest(BaseModel):
+    hazard: str  # "wildfire" or "earthquake"
+    items: List[PlanItem]
+
+
+class PlanSummaryResponse(BaseModel):
+    summary: str
+    model: str
+
+
+def _build_plan_prompt(payload: PlanSummaryRequest) -> str:
+    done_items = [i.text for i in payload.items if i.done]
+    todo_items = [i.text for i in payload.items if not i.done]
+    done_block = "\n".join(f"- {t}" for t in done_items) or "(none yet)"
+    todo_block = "\n".join(f"- {t}" for t in todo_items) or "(none — everything below is already done)"
+    hazard_word = "wildfire" if payload.hazard == "wildfire" else "earthquake"
+
+    return (
+        f"You are encouraging someone with their {hazard_word} preparedness checklist, based "
+        "only on their own real progress below. You must ONLY reference the items listed — "
+        "never invent a new preparedness step, statistic, or safety instruction that isn't "
+        "already in this list. Write 2-4 short sentences of plain, warm, encouraging English "
+        "prose, no bullet points, no markdown, no headers. Briefly acknowledge what's already "
+        "done, then name one or two concrete remaining items to prioritize next, describing "
+        "them close to how they're written below.\n\n"
+        f"Already done:\n{done_block}\n\n"
+        f"Not done yet:\n{todo_block}\n"
+    )
+
+
+@router.post("/plan-summary", response_model=PlanSummaryResponse)
+def summarize_plan(payload: PlanSummaryRequest) -> PlanSummaryResponse:
+    text = _call_gemini(_build_plan_prompt(payload), max_output_tokens=200)
+    return PlanSummaryResponse(summary=text, model=GEMINI_MODEL)
