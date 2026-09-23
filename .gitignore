@@ -10,3 +10,4 @@ __pycache__/
 backend/pyproject.toml
 backend/uv.lock
 backend/data/cache.sqlite3
+.DS_Store

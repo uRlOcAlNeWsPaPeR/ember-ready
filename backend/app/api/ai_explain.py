@@ -20,7 +20,7 @@ from pydantic import BaseModel
 router = APIRouter()
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 
 
@@ -34,9 +34,16 @@ def _call_gemini(prompt: str, max_output_tokens: int = 220) -> str:
             headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
             json={
                 "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"temperature": 0.3, "maxOutputTokens": max_output_tokens},
+                "generationConfig": {
+                    "temperature": 0.3,
+                    "maxOutputTokens": max_output_tokens,
+                    # These are short, single-turn rewrites of data we already
+                    # trust, not reasoning tasks — thinking mode only adds
+                    # multi-second latency here (measured ~15s+ vs ~2s off).
+                    "thinkingConfig": {"thinkingBudget": 0},
+                },
             },
-            timeout=15.0,
+            timeout=20.0,
         )
         resp.raise_for_status()
         data = resp.json()
