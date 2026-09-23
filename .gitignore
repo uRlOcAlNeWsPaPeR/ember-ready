@@ -1,0 +1,11 @@
+backend/venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+*.egg-info/
+.vercel
+.env*
+backend/pyproject.toml
+backend/uv.lock
+backend/data/cache.sqlite3

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EmberReady — Map</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="stylesheet" href="style.css?v=20" />
+</head>
+<body class="map-screen">
+  <div class="map-screen-frame">
+    <div id="map" class="leaflet-map" role="img" aria-label="Map of the United States color-coded by baseline wildfire hazard category, by county"></div>
+    <div class="map-inset map-inset-ak" style="position:absolute; left:12px; top:70px; width:120px; height:90px; border-radius:12px; overflow:hidden; box-shadow: var(--shadow-soft); z-index:600;">
+      <div id="inset-ak" style="width:100%; height:100%;" role="img" aria-label="Alaska hazard inset"></div>
+    </div>
+    <div class="map-inset map-inset-hi" style="position:absolute; left:12px; top:168px; width:90px; height:70px; border-radius:12px; overflow:hidden; box-shadow: var(--shadow-soft); z-index:600;">
+      <div id="inset-hi" style="width:100%; height:100%;" role="img" aria-label="Hawaii hazard inset"></div>
+    </div>
+  </div>
+
+  <div class="map-top-bar">
+    <form id="map-search-form" style="display:flex; gap:8px; flex:1;">
+      <input type="text" id="map-query" placeholder="Search address or ZIP" required autocomplete="off" />
+    </form>
+  </div>
+  <div class="error-text hidden" id="map-search-error" style="position:fixed; top:64px; left:16px; right:16px; z-index:800; background:var(--surface); padding:10px 14px; border-radius:var(--radius-sm); box-shadow:var(--shadow-soft);"></div>
+
+  <button type="button" class="reset-view-btn" id="reset-view-btn" title="Reset map view" aria-label="Reset map view">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11.5 12 4l9 7.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+
+  <button type="button" class="locate-me-btn" id="locate-me-btn" title="Locate me" aria-label="Locate me">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke-linecap="round"/></svg>
+  </button>
+
+  <div class="map-legend-strip" id="map-legend-strip"></div>
+
+  <div class="map-info-sheet" id="map-info-sheet">
+    <button type="button" class="modal-close" id="close-sheet-btn" style="position:absolute; top:8px; right:12px;" aria-label="Close">&times;</button>
+    <div id="sheet-loading" class="fine-print hidden">Fetching conditions…</div>
+
+    <div id="county-info-panel" class="hidden">
+      <h3 id="county-info-name"></h3>
+      <p><strong id="county-info-category"></strong> baseline hazard — <span id="county-info-percentile"></span></p>
+      <p class="fine-print">Baseline hazard only; check local conditions for a personalized preparedness indicator.</p>
+      <button id="county-info-check-score" type="button" class="btn-block">Check Live Conditions Here</button>
+    </div>
+
+    <div id="score-panel-section" class="hidden">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+        <span class="pill" id="map-status-pill">--</span>
+        <div>
+          <span class="risk-percent" id="map-risk-score" style="font-size:1.8rem;">--</span>
+          <span class="fine-print" id="map-location-text" style="display:block;"></span>
+        </div>
+      </div>
+
+      <button type="button" class="tap-row" id="open-risk-details-row">
+        <span class="tap-row-main">
+          <span class="tap-row-title">Risk Details</span>
+          <span class="tap-row-sub" id="risk-details-summary">Area hazard, today's weather, data confidence</span>
+        </span>
+        <span class="tap-row-right"><svg class="tap-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </button>
+
+      <button type="button" class="tap-row" id="open-wind-aq-row">
+        <span class="tap-row-main">
+          <span class="tap-row-title">Wind &amp; Air Quality</span>
+          <span class="tap-row-sub" id="wind-aq-summary">Loading…</span>
+        </span>
+        <span class="tap-row-right"><svg class="tap-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </button>
+
+      <button type="button" class="tap-row" id="open-alerts-row">
+        <span class="tap-row-main">
+          <span class="tap-row-title">Active Official Alerts</span>
+          <span class="tap-row-sub" id="alerts-summary">Loading…</span>
+        </span>
+        <span class="tap-row-right">
+          <span class="tap-row-badge hidden" id="alerts-badge"></span>
+          <svg class="tap-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal content lives here when not open — see shared/modal.js -->
+  <div class="hidden">
+    <div data-modal-home="risk-details">
+      <div id="score-panel-mount"></div>
+    </div>
+    <div data-modal-home="wind-aq">
+      <div class="rs-components">
+        <div class="rs-component">
+          <div class="rc-label">Wind</div>
+          <div class="rc-value" id="wind-value" style="display:flex; align-items:center; gap:6px;">
+            <svg id="wind-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="flex:0 0 auto;"><path d="M12 2v20M12 2l-5 5M12 2l5 5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span id="wind-text">--</span>
+          </div>
+        </div>
+        <div class="rs-component">
+          <div class="rc-label">Air Quality</div>
+          <div class="rc-value" id="aq-value">--</div>
+        </div>
+      </div>
+      <p class="fine-print" id="wind-aq-source"></p>
+    </div>
+    <div data-modal-home="alerts">
+      <div id="alerts-panel"></div>
+    </div>
+  </div>
+
+  <div id="bottom-nav-root"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="shared/app-state.js?v=20"></script>
+  <script src="shared/effects.js?v=20"></script>
+  <script src="shared/nav.js?v=20"></script>
+  <script src="shared/modal.js?v=20"></script>
+  <script src="shared/score-panel.js?v=20"></script>
+  <script src="shared/awareness-data.js?v=20"></script>
+  <script src="shared/address-autocomplete.js?v=20"></script>
+  <script src="map.js?v=20"></script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EmberReady — Your Plan</title>
+  <link rel="stylesheet" href="style.css?v=20" />
+</head>
+<body>
+  <main class="screen">
+    <div class="screen-header">
+      <div class="screen-title">Your Plan</div>
+      <div class="screen-subtitle">Clear guidance for before, during, and after a wildfire.</div>
+    </div>
+
+    <div class="journey-path">
+      <div class="journey-path-fill" id="journey-path-fill"></div>
+
+      <!-- Before a Wildfire -->
+      <div class="journey-chapter" data-chapter="before">
+        <div class="chapter-node">1</div>
+        <div class="chapter-card">
+          <div class="chapter-scene">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 11l3 3L22 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="chapter-status" data-status>Not started</span>
+          <div class="chapter-title">Before a Wildfire</div>
+          <p class="chapter-sentence">Pack a go-bag, make an evacuation plan, protect your home, save important documents, and sign up for local alerts.</p>
+          <button type="button" class="tap-row" data-open-chapter="before" style="margin-top:6px;">
+            <span class="tap-row-main">
+              <span class="tap-row-title">View Checklist</span>
+              <span class="tap-row-sub" data-progress-text="before">Not started</span>
+            </span>
+            <span class="tap-row-right">
+              <span class="tap-row-badge" data-progress-badge="before">--</span>
+              <svg class="tap-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- During a Wildfire -->
+      <div class="journey-chapter" data-chapter="during">
+        <div class="chapter-node">2</div>
+        <div class="chapter-card">
+          <div class="chapter-scene">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2 4 9v11a2 2 0 0 0 2 2h4v-6h4v6h4a2 2 0 0 0 2-2V9z" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="chapter-status" data-status>Not started</span>
+          <div class="chapter-title">During a Wildfire</div>
+          <p class="chapter-sentence">Follow official evacuation instructions, avoid smoke exposure, keep track of local updates, and leave early if told to evacuate.</p>
+          <button type="button" class="tap-row" data-open-chapter="during" style="margin-top:6px;">
+            <span class="tap-row-main">
+              <span class="tap-row-title">View Checklist</span>
+              <span class="tap-row-sub" data-progress-text="during">Not started</span>
+            </span>
+            <span class="tap-row-right">
+              <span class="tap-row-badge" data-progress-badge="during">--</span>
+              <svg class="tap-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- After a Wildfire -->
+      <div class="journey-chapter" data-chapter="after">
+        <div class="chapter-node">3</div>
+        <div class="chapter-card">
+          <div class="chapter-scene">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l2.6 5.9 6.4.6-4.8 4.3 1.4 6.3L12 16l-5.6 3.1 1.4-6.3-4.8-4.3 6.4-.6z" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="chapter-status" data-status>Not started</span>
+          <div class="chapter-title">After a Wildfire</div>
+          <p class="chapter-sentence">Return only when officials say it's safe, check air quality, document damage, and safely clean up.</p>
+          <button type="button" class="tap-row" data-open-chapter="after" style="margin-top:6px;">
+            <span class="tap-row-main">
+              <span class="tap-row-title">View Checklist</span>
+              <span class="tap-row-sub" data-progress-text="after">Not started</span>
+            </span>
+            <span class="tap-row-right">
+              <span class="tap-row-badge" data-progress-badge="after">--</span>
+              <svg class="tap-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal content lives here when not open — see shared/modal.js -->
+  <div class="hidden">
+    <div data-body-home="before">
+      <form id="household-form">
+        <label for="ownership">Do you own or rent your home?</label>
+        <select id="ownership" name="ownership" required>
+          <option value="own">Own</option>
+          <option value="rent">Rent</option>
+        </select>
+        <label for="construction_type">What best describes your home's exterior?</label>
+        <select id="construction_type" name="construction_type" required>
+          <option value="wood_siding_or_shake_roof">Wood siding or shake roof</option>
+          <option value="stucco_or_masonry">Stucco or masonry</option>
+          <option value="mobile_or_manufactured">Mobile or manufactured</option>
+          <option value="other_or_unknown">Other / not sure</option>
+        </select>
+        <label style="display:flex; align-items:center; gap:10px; font-weight:400;">
+          <input type="checkbox" name="has_pets" style="width:20px;height:20px;" /> I have pets
+        </label>
+        <label style="display:flex; align-items:center; gap:10px; font-weight:400;">
+          <input type="checkbox" name="mobility_needs" style="width:20px;height:20px;" /> Someone in my household has mobility needs
+        </label>
+        <button type="submit" class="btn-block" style="margin-top:14px;">Build My Checklist</button>
+      </form>
+      <p class="fine-print" id="before-note"></p>
+
+      <details class="accordion hidden" id="evacuation-route-list-accordion">
+        <summary>Make an evacuation plan <span class="accordion-count" data-count="evacuation-route-list"></span></summary>
+        <ul class="simple-checklist" id="evacuation-route-list"></ul>
+      </details>
+
+      <details class="accordion hidden" id="go-bag-list-accordion">
+        <summary>Pack a go-bag <span class="accordion-count" data-count="go-bag-list"></span></summary>
+        <ul class="simple-checklist" id="go-bag-list"></ul>
+      </details>
+
+      <details class="accordion hidden" id="defensible-space-list-accordion">
+        <summary>Protect your home <span class="accordion-count" data-count="defensible-space-list"></span></summary>
+        <ul class="simple-checklist" id="defensible-space-list"></ul>
+      </details>
+    </div>
+
+    <div data-body-home="during">
+      <ul class="simple-checklist" id="during-list"></ul>
+      <a href="index.html" class="btn btn-secondary btn-block" style="margin-top:12px;">Check Local Updates on the Map</a>
+    </div>
+
+    <div data-body-home="after">
+      <ul class="simple-checklist" id="after-list"></ul>
+      <a href="index.html" class="btn btn-secondary btn-block" style="margin-top:12px;">Check Air Quality on the Map</a>
+    </div>
+  </div>
+
+  <div id="bottom-nav-root"></div>
+
+  <script src="shared/app-state.js?v=20"></script>
+  <script src="shared/effects.js?v=20"></script>
+  <script src="shared/nav.js?v=20"></script>
+  <script src="shared/modal.js?v=20"></script>
+  <script src="plan.js?v=20"></script>
+</body>
+</html>

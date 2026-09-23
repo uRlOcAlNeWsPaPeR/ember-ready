@@ -1,0 +1,91 @@
+{
+  "_readme": "Single source of truth for the EmberReady weighted scoring model. Edit this file, not Python code, to change weights. weight_points across all factors must sum to 100. Each factor's weight_points must sum correctly within its category to match category_weight_pct. See app/scoring/config.py for the loader and app/scoring/weighted_model.py for how this is applied.",
+
+  "categories": {
+    "baseline_wildfire_exposure": {
+      "weight_pct": 65,
+      "rationale": "Long-term regional hazard should dominate the combined indicator so a single calm-weather day cannot erase a genuinely hazardous location. Raised from an earlier 45% after reviewing the requirement that mild weather must not fully mask high baseline exposure.",
+      "factors": ["burn_probability", "fuel_hazard", "slope"]
+    },
+    "current_fire_weather": {
+      "weight_pct": 35,
+      "rationale": "Short-term conditions materially change day-to-day danger and are the main thing a preparedness tool can act on immediately, but should not outweigh the region's underlying hazard.",
+      "factors": ["wind_gusts", "wind_speed", "relative_humidity", "temperature", "days_since_rain"]
+    }
+  },
+
+  "factors": {
+    "burn_probability": {
+      "weight_points": 35,
+      "range": [0.0, 1.0],
+      "invert": false,
+      "unit": "national percentile",
+      "rationale": "USDA WRC's modeled long-term burn probability is the best available nationwide baseline hazard source; it is the single largest weight in the model."
+    },
+    "fuel_hazard": {
+      "weight_points": 20,
+      "range": [0.0, 1.0],
+      "invert": false,
+      "unit": "FBFM40 proxy score",
+      "rationale": "Vegetation/fuel type is a direct physical driver of fire behavior, live-queried from LANDFIRE at 30m resolution."
+    },
+    "slope": {
+      "weight_points": 10,
+      "range": [0.0, 45.0],
+      "invert": false,
+      "unit": "%",
+      "rationale": "Steeper terrain increases fire spread rate upslope; weighted lower than fuel/burn-probability because it modifies rather than drives ignition/spread likelihood."
+    },
+    "wind_gusts": {
+      "weight_points": 9,
+      "range": [0.0, 97.0],
+      "invert": false,
+      "unit": "km/h",
+      "rationale": "Gust peaks (not sustained speed) drive ember transport and spotting, the dominant mechanism for rapid fire spread and new ignitions ahead of a fire front — weighted higher than sustained wind speed within the wind/gusts category."
+    },
+    "wind_speed": {
+      "weight_points": 6,
+      "range": [0.0, 65.0],
+      "invert": false,
+      "unit": "km/h",
+      "rationale": "Sustained wind still matters for spread rate and firefighting conditions, but is a secondary driver relative to gusts."
+    },
+    "relative_humidity": {
+      "weight_points": 6,
+      "range": [5.0, 100.0],
+      "invert": true,
+      "unit": "%",
+      "rationale": "Relative humidity is the more direct fuel-moisture indicator used in standard fire-weather indices (e.g. NFDRS), so it is weighted higher than temperature within the humidity+temperature category."
+    },
+    "temperature": {
+      "weight_points": 4,
+      "range": [0.0, 43.0],
+      "invert": false,
+      "unit": "°C",
+      "rationale": "Temperature correlates with fire danger mainly through its effect on fuel moisture, which relative humidity already captures more directly — kept as a smaller secondary factor rather than dropped, since it still affects fuel and firefighter conditions."
+    },
+    "days_since_rain": {
+      "weight_points": 10,
+      "range": [0.0, 21.0],
+      "invert": false,
+      "unit": "days",
+      "rationale": "Documented threshold: a day counts as 'meaningful rain' at >=2.5mm (0.1in) precipitation. The normalization range (0-21 days) is set to exactly match the precipitation lookback window fetched from Open-Meteo, so a full dry spell can actually reach full contribution — an earlier version fetched 14 days of history but normalized against 30, silently capping this factor at half its intended weight."
+    }
+  },
+
+  "meaningful_rain_mm": 2.5,
+  "rain_lookback_days": 21,
+
+  "label_thresholds": [
+    [25.0, "Low"],
+    [50.0, "Moderate"],
+    [75.0, "High"],
+    [100.01, "Extreme"]
+  ],
+
+  "confidence_rules": {
+    "high_max_missing_factors": 0,
+    "medium_max_missing_factors": 2,
+    "_note": "3+ missing factors, or an entire category (baseline or weather) fully unavailable, forces Low confidence regardless of count."
+  }
+}
