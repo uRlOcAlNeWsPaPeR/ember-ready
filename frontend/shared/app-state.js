@@ -11,7 +11,7 @@ const EmberReadyState = (() => {
   const KEY = "emberready_state_v3";
   const OLD_KEYS = ["emberready_state_v2", "emberready_state_v1"];
 
-  // "During" and "After" are general official guidance, not personalized —
+  // All of these are general official guidance, not personalized —
   // checking one off just means "I've read this," tracked locally so the
   // Plan screen can show real progress without fabricating a task system.
   const DURING_ITEMS = [
@@ -28,6 +28,44 @@ const EmberReadyState = (() => {
     "Clean up safely: wear gloves and an N95+ mask, and watch for hot spots, ash, and weakened structures.",
   ];
 
+  const EARTHQUAKE_BEFORE_ITEMS = [
+    "Secure heavy furniture, mirrors, water heaters, and shelving to walls so they can't tip over.",
+    "Know how to shut off your home's gas, water, and electricity in an emergency.",
+    "Pack a go-bag and emergency kit: water, food, medications, flashlight, and a battery-powered radio.",
+    "Identify safe spots in each room — under sturdy furniture and away from windows or tall shelving.",
+    "Practice \"Drop, Cover, and Hold On\" with everyone in your household.",
+    "Agree on an out-of-area contact and a meeting point in case your household is separated.",
+  ];
+
+  const EARTHQUAKE_DURING_ITEMS = [
+    "Drop, Cover, and Hold On: drop to the ground, cover under sturdy furniture, and hold on until shaking stops.",
+    "If indoors, stay indoors — most injuries happen when people try to move during shaking.",
+    "If outdoors, move to an open area away from buildings, trees, and power lines.",
+    "If in bed, stay there and cover your head and neck with a pillow.",
+    "If driving, pull over away from bridges and overpasses, and stay in the vehicle until shaking stops.",
+  ];
+
+  const EARTHQUAKE_AFTER_ITEMS = [
+    "Expect aftershocks — be ready to Drop, Cover, and Hold On again.",
+    "Check yourself and others for injuries before checking on your home.",
+    "Before re-entering, check for gas leaks, structural damage, and downed power lines.",
+    "Listen to official sources (see the Map tab) for information and instructions, not rumors.",
+    "Document any damage with photos before you begin cleanup, for insurance purposes.",
+  ];
+
+  // Maps a stage name to its static item list and the state key its
+  // local "reviewed" flags live under. Wildfire keeps its original
+  // "during"/"after" names (no dynamic "before" here — that's the real,
+  // personalized backend checklist instead); earthquake has all three,
+  // since there's no equivalent backend personalization for it.
+  const REVIEW_STAGES = {
+    during: { items: DURING_ITEMS, stateKey: "duringReviewed" },
+    after: { items: AFTER_ITEMS, stateKey: "afterReviewed" },
+    earthquakeBefore: { items: EARTHQUAKE_BEFORE_ITEMS, stateKey: "earthquakeBeforeReviewed" },
+    earthquakeDuring: { items: EARTHQUAKE_DURING_ITEMS, stateKey: "earthquakeDuringReviewed" },
+    earthquakeAfter: { items: EARTHQUAKE_AFTER_ITEMS, stateKey: "earthquakeAfterReviewed" },
+  };
+
   function defaults() {
     return {
       lastScore: null, // full /api/score response
@@ -36,6 +74,10 @@ const EmberReadyState = (() => {
       completed: {}, // "<category>::<item text>" -> true (Before-wildfire checklist)
       duringReviewed: {}, // "<item text>" -> true
       afterReviewed: {}, // "<item text>" -> true
+      earthquakeBeforeReviewed: {},
+      earthquakeDuringReviewed: {},
+      earthquakeAfterReviewed: {},
+      lastPlanHazard: "wildfire", // remembers which Plan sub-tab was open
       scoreViewed: false,
       reduceMotion: false,
       highContrast: false,
@@ -141,12 +183,12 @@ const EmberReadyState = (() => {
   }
 
   function isReviewed(stage, text) {
-    const key = stage === "during" ? "duringReviewed" : "afterReviewed";
+    const key = REVIEW_STAGES[stage].stateKey;
     return !!load()[key][text];
   }
 
   function setReviewed(stage, text, done) {
-    const key = stage === "during" ? "duringReviewed" : "afterReviewed";
+    const key = REVIEW_STAGES[stage].stateKey;
     return update((state) => {
       const next = { ...state[key] };
       if (done) next[text] = true;
@@ -156,10 +198,9 @@ const EmberReadyState = (() => {
   }
 
   function reviewedProgress(stage) {
-    const items = stage === "during" ? DURING_ITEMS : AFTER_ITEMS;
+    const { items, stateKey } = REVIEW_STAGES[stage];
     const state = load();
-    const key = stage === "during" ? "duringReviewed" : "afterReviewed";
-    const done = items.filter((t) => state[key][t]).length;
+    const done = items.filter((t) => state[stateKey][t]).length;
     return { done, total: items.length };
   }
 
@@ -167,9 +208,16 @@ const EmberReadyState = (() => {
     return update({ scoreViewed: true });
   }
 
+  function setLastPlanHazard(hazard) {
+    return update({ lastPlanHazard: hazard });
+  }
+
   return {
     DURING_ITEMS,
     AFTER_ITEMS,
+    EARTHQUAKE_BEFORE_ITEMS,
+    EARTHQUAKE_DURING_ITEMS,
+    EARTHQUAKE_AFTER_ITEMS,
     load,
     save,
     update,
@@ -181,6 +229,7 @@ const EmberReadyState = (() => {
     setReviewed,
     reviewedProgress,
     markScoreViewed,
+    setLastPlanHazard,
   };
 })();
 
