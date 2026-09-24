@@ -47,6 +47,16 @@ const insetMaps = {
   HI: createInsetMap("eq-inset-hi", HI_BOUNDS),
 };
 
+// The seismic hazard overlay and the quake markers load independently and
+// asynchronously — whichever fetch finishes second paints on top, which
+// could silently put a hazard grid cell over a marker and steal its click.
+// A dedicated, higher-stacked pane keeps markers clickable regardless of
+// which layer happens to load first.
+for (const m of [map, insetMaps.AK, insetMaps.HI]) {
+  m.createPane("quakePane");
+  m.getPane("quakePane").style.zIndex = 450;
+}
+
 let quakeMarkers = { main: [], AK: [], HI: [] };
 let currentPeriod = "day";
 
@@ -229,6 +239,7 @@ function renderQuakes(geojson) {
     const key = targetMapKeyFor(lat, lon);
     const targetMap = mapInstanceFor(key);
     const marker = L.circleMarker([lat, lon], {
+      pane: "quakePane",
       radius: radiusForMagnitude(feature.properties.mag),
       fillColor: "#6d28d9",
       fillOpacity: 0.65,
